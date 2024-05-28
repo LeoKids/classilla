@@ -137,15 +137,15 @@ PRBool nsStrPrivate::EnsureCapacity(nsStr& aString,PRUint32 aNewLength) {
  * @return  void
  */
 PRBool nsStrPrivate::GrowCapacity(nsStr& aDest,PRUint32 aNewLength) {
+  PRUint32 newCapacity = aDest.GetCapacity();
   PRBool result=PR_TRUE;
-  if(aNewLength>aDest.GetCapacity()) {
+  if(aNewLength>newCapacity) {
     nsStr theTempStr;
     nsStrPrivate::Initialize(theTempStr,eCharSize(aDest.GetCharSize()));
 
-      // the new strategy is, allocate exact size, double on grows
-    if ( aDest.GetCapacity() ) {
-      PRUint32 newCapacity = aDest.GetCapacity();
-      while ( newCapacity < aNewLength )
+    // the new strategy is, allocate exact size, double on grows
+    if ( newCapacity ) {
+      while ( newCapacity && newCapacity < aNewLength )
         newCapacity <<= 1;
       aNewLength = newCapacity;
     }
