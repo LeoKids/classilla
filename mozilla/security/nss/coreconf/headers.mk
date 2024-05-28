@@ -12,7 +12,7 @@
 #  (xp) include paths
 #
 
-INCLUDES += -I$(SOURCE_MDHEADERS_DIR) -I$(SOURCE_MDHEADERS_DIR)/nspr -I$(SOURCE_XPHEADERS_DIR)
+INCLUDES += -I$(SOURCE_MDHEADERS_DIR) -I$(SOURCE_XPHEADERS_DIR)
 
 #
 #  Only append source-side private cross-platform include paths for
