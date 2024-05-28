@@ -42,6 +42,52 @@
 
 #include "xpcprivate.h"
 
+// Provide our own routine because it is missing from old
+// oleaut32.dll versions
+static HRESULT SafeArrayGetVartype_internal(SAFEARRAY *psa, VARTYPE *pvt)
+{
+  if(!psa || !pvt)
+    return E_INVALIDARG;
+
+  unsigned short fFeatures = psa->fFeatures;
+
+  if(fFeatures & FADF_HAVEVARTYPE)
+  {
+    // from MSDN, SAFEARRAY type documentation:
+    // When set there will be a VT tag at negative offset 4 in the array
+    // descriptor that specifies the element type.
+    *pvt = *(VARTYPE *)((unsigned char *)psa - 4);
+    return S_OK;
+  }
+  if(fFeatures & FADF_BSTR)
+  {
+    *pvt = VT_BSTR;
+    return S_OK;
+  }
+  if(fFeatures & FADF_RECORD)
+  {
+    *pvt = VT_RECORD;
+    return S_OK;
+  }
+  if(fFeatures & FADF_DISPATCH)
+  {
+    *pvt = VT_DISPATCH;
+    return S_OK;
+  }
+  if(fFeatures & FADF_UNKNOWN)
+  {
+    *pvt = VT_UNKNOWN;
+    return S_OK;
+  }
+  if(fFeatures & FADF_VARIANT)
+  {
+    *pvt = VT_VARIANT;
+    return S_OK;
+  }
+
+  return E_INVALIDARG;
+}
+
 VARTYPE XPCDispConvert::JSTypeToCOMType(XPCCallContext& ccx, jsval val)
 {
     if(JSVAL_IS_PRIMITIVE(val))
@@ -397,7 +443,7 @@ JSBool XPCDispConvert::COMArrayToJSArray(XPCCallContext& ccx,
     }
     else // This was maybe a VT_SAFEARRAY
     {
-        if(FAILED(SafeArrayGetVartype(src.parray, &vartype)))
+        if(FAILED(SafeArrayGetVartype_internal(src.parray, &vartype)))
             return JS_FALSE;
     }
     jsval val;
