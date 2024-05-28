@@ -139,7 +139,7 @@ NS_COM void StartupSpecialSystemDirectory()
     if(gShell32DLLInst)
     {
         gGetSpecialPathProc  = (GetSpecialPathProc) GetProcAddress(gShell32DLLInst, 
-                                                                   "SHGetSpecialFolderPath");
+                                                                   "SHGetFolderPathA");
     }
     
     if (!gGetSpecialPathProc)
@@ -151,7 +151,7 @@ NS_COM void StartupSpecialSystemDirectory()
         if(gShell32DLLInst)
         {
             gGetSpecialPathProc  = (GetSpecialPathProc) GetProcAddress(gShell32DLLInst, 
-                                                                       "SHGetSpecialFolderPath");
+                                                                       "SHGetSpecialFolderPathA");
         }
     }
 #endif
