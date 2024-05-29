@@ -6,6 +6,10 @@
 
 #define TLS13_ESNI_VERSION 0xff01
 
+#if defined(_MSC_VER) && _MSC_VER < 1300
+#define __FUNCTION__ ""
+#endif
+
 /*
  *  struct {
  *      uint16 version;
