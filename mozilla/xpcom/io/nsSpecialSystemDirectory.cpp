@@ -121,10 +121,24 @@ PR_STATIC_CALLBACK(PRBool) DeleteSystemDirKeys(nsHashKey *aKey, void *aData, voi
 #define NS_SYSTEMDIR_HASH_NUM (10)
 static nsHashtable *systemDirectoriesLocations = NULL;
 #if defined (XP_WIN)
+typedef HRESULT (WINAPI * GetFolderPathProc) (HWND hwndOwner, int nFolder, HANDLE hToken, DWORD fCreate, LPSTR lpszPath);
 typedef BOOL (WINAPI * GetSpecialPathProc) (HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
+GetFolderPathProc gGetFolderPathProc = NULL;
 GetSpecialPathProc gGetSpecialPathProc = NULL;
 static HINSTANCE gShell32DLLInst = NULL;
 #endif
+
+#if defined (XP_WIN)
+BOOL WINAPI SHGetSpecialFolderPathA_wrapper(HWND hwnd, LPSTR pszPath, int csidl, BOOL fCreate)
+{
+    if (gGetFolderPathProc)
+    {
+        return gGetFolderPathProc(hwnd, csidl, NULL, 0, pszPath) == S_OK;
+    }
+    return FALSE;
+}
+#endif
+
 NS_COM void StartupSpecialSystemDirectory()
 {
 #if defined (XP_WIN)
@@ -138,11 +152,15 @@ NS_COM void StartupSpecialSystemDirectory()
     gShell32DLLInst = LoadLibrary("shfolder.dll");
     if(gShell32DLLInst)
     {
-        gGetSpecialPathProc  = (GetSpecialPathProc) GetProcAddress(gShell32DLLInst, 
+        gGetFolderPathProc  = (GetFolderPathProc) GetProcAddress(gShell32DLLInst, 
                                                                    "SHGetFolderPathA");
     }
     
-    if (!gGetSpecialPathProc)
+    if (gGetFolderPathProc)
+    {
+            gGetSpecialPathProc = SHGetSpecialFolderPathA_wrapper;
+    }
+    else
     {
         if (gShell32DLLInst)
             FreeLibrary(gShell32DLLInst);
@@ -175,45 +193,6 @@ NS_COM void ShutdownSpecialSystemDirectory()
 }
 
 #if defined (XP_WIN)
-
-static PRBool gGlobalOSInitialized = PR_FALSE;
-static PRBool gGlobalDBCSEnabledOS = PR_FALSE;
-
-//----------------------------------------------------------------------------------------
-static char* MakeUpperCase(char* aPath)
-//----------------------------------------------------------------------------------------
-{
-  // check if the Windows is DBCSEnabled once.
-  if (PR_FALSE == gGlobalOSInitialized) {
-    if (GetSystemMetrics(SM_DBCSENABLED))
-      gGlobalDBCSEnabledOS = PR_TRUE;
-    gGlobalOSInitialized = PR_TRUE;
-  }
-
-  // windows does not care about case.  pu sh to uppercase:
-  int length = strlen(aPath);
-  int i = 0; /* C++ portability guide #20 */
-  if (!gGlobalDBCSEnabledOS)  {
-    // for non-DBCS windows
-    for (i = 0; i < length; i++)
-        if (islower(aPath[i]))
-          aPath[i] = _toupper(aPath[i]);
-  }
-  else {
-    // for DBCS windows
-    for (i = 0; i < length; i++)  {
-      if (IsDBCSLeadByte(aPath[i])) {
-        // begining of the double bye char
-        i++;
-      }
-      else  {
-        if ( islower(aPath[i]))
-          aPath[i] = _toupper(aPath[i]);
-      }
-    } //end of for loop
-  }
-  return aPath;
-}
 
 //----------------------------------------------------------------------------------------
 static void GetWindowsFolder(int folder, nsFileSpec& outDirectory)
@@ -491,7 +470,7 @@ void nsSpecialSystemDirectory::operator = (SystemDirectories aSystemSystemDirect
                 if ( path[1] == ':' && path[2] == '\\' )
                     path[3] = 0;
             }
-            *this = MakeUpperCase(path);
+            *this = CharUpper(path);
         }
 #elif defined(XP_OS2)
         {
@@ -522,7 +501,7 @@ void nsSpecialSystemDirectory::operator = (SystemDirectories aSystemSystemDirect
         {
             char path[_MAX_PATH];
             DWORD len = GetTempPath(_MAX_PATH, path);
-            *this = MakeUpperCase(path);
+            *this = CharUpper(path);
         }
 #elif defined(XP_OS2)
           {
@@ -764,7 +743,7 @@ void nsSpecialSystemDirectory::operator = (SystemDirectories aSystemSystemDirect
             path[len]   = '\\';
             path[len+1] = '\0';
 
-            *this = MakeUpperCase(path);
+            *this = CharUpper(path);
 
             break;
         }
@@ -781,7 +760,7 @@ void nsSpecialSystemDirectory::operator = (SystemDirectories aSystemSystemDirect
             path[len]   = '\\';
             path[len+1] = '\0';
 
-            *this = MakeUpperCase(path);
+            *this = CharUpper(path);
             break;
         }
 
@@ -798,7 +777,7 @@ void nsSpecialSystemDirectory::operator = (SystemDirectories aSystemSystemDirect
                 path[len]   = '\\';
                 path[len+1] = '\0';
                 
-                *this = MakeUpperCase(path);
+                *this = CharUpper(path);
                 break;
             }
 
@@ -817,7 +796,7 @@ void nsSpecialSystemDirectory::operator = (SystemDirectories aSystemSystemDirect
                 path[len]   = '\\';
                 path[len+1] = '\0';
                 
-                *this = MakeUpperCase(path);
+                *this = CharUpper(path);
                 break;
             }
         }
