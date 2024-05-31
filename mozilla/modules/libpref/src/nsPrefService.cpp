@@ -504,6 +504,22 @@ static nsresult openPrefFile(nsIFile* aFile, PRBool aIsErrorFatal,
 /*
  * some stuff that gets called from Pref_Init()
  */
+static PRBool
+nsCStringEndsWith(nsCString& name, const char *ending)
+{
+  if (!ending) return PR_FALSE;
+
+  PRInt32 len = name.Length();
+  if (len == 0) return PR_FALSE;
+
+  PRInt32 endingLen = PL_strlen(ending);
+  if (len > endingLen && name.RFind(ending, PR_TRUE) == len - endingLen) {
+        return PR_TRUE;
+  }
+  else {
+        return PR_FALSE;
+  }
+}
 
 /// Note: inplaceSortCallback is a small C callback stub for NS_QuickSort
 static int PR_CALLBACK
@@ -595,7 +611,7 @@ JSBool pref_InitInitialObjects()
     rv = aFile->GetNativeLeafName(leafName);
     if (NS_SUCCEEDED(rv)) {
       // Skip non-js files
-      if ((leafName.Length() < 3) || !Substring(leafName, leafName.Length() - 3, 3).Equals(NS_LITERAL_CSTRING(".js")))
+      if ((leafName.Length() < 3) || !nsCStringEndsWith(leafName, ".js"))
         shouldParse = PR_FALSE;
       // Skip files in the special list.
       if (shouldParse) {
