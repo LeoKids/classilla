@@ -635,8 +635,8 @@ NS_METHOD nsKeygenFormProcessor::ProvideContent(const nsString& aFormType,
 { 
   if (Compare(aFormType, NS_LITERAL_STRING("SELECT"), 
     nsCaseInsensitiveStringComparator()) == 0) {
-    for (SECKeySizeChoiceInfo* choice = SECKeySizeChoiceList; choice && choice->name; ++choice) {
-      nsString *str = new nsString(choice->name);
+    for (int i = 0; i < (sizeof(SECKeySizeChoiceList)/sizeof(SECKeySizeChoiceList[0])); ++i) {
+      nsString *str = new nsString(SECKeySizeChoiceList[i].name);
       aContent.AppendElement(str);
     }
     aAttribute.Assign(NS_LITERAL_STRING("-mozilla-keygen"));
